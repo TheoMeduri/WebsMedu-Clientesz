@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Clientes</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Cadastro de Clientes</h1>
+        <form id="clientForm">
+            <div class="form-group">
+                <label for="name">Nome:</label>
+                <input type="text" id="name" name="name" placeholder="Digite o nome" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" placeholder="Digite o email" required>
+            </div>
+            <div class="form-group">
+                <label for="cpf-cnpj">CPF/CNPJ:</label>
+                <input type="text" id="cpf-cnpj" name="cpf-cnpj" placeholder="Digite o CPF ou CNPJ da empresa" required>
+            </div>
+            <div class="form-group">
+                <label for="name-business">Nome da Empresa:</label>
+                <input type="text" id="name-business" name="name-business" placeholder="Digite o nome da empresa" required>
+            </div>
+            <div class="form-group">
+                <label for="domain">Domínio:</label>
+                <input type="url" name="domain" id="domain" placeholder="Digite o domínio da empresa" required>
+            </div>
+            <div class="form-group">
+                <label for="code">Voucher Code:</label>
+                <input type="text" name="code" id="code" placeholder="Digite o código do voucher">
+            </div>
+            <div class="form-group">
+                <label for="location">Onde o cliente foi atendido:</label>
+                <select id="location" name="location" required>
+                    <option value="site">Site</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="submit">Cadastrar</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore-compat.js"></script>
+
+    <script>
+            const firebaseConfig = {
+                apiKey: "AIzaSyBTGAw_uTl8K4R6g6Q0kzr8Pp32a7XWH3E",
+                authDomain: "websmedu-clientes.firebaseapp.com",
+                projectId: "websmedu-clientes",
+                storageBucket: "websmedu-clientes.appspot.com",
+                messagingSenderId: "99846671120",
+                appId: "1:99846671120:web:07df21b232b4351523b395"
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+
+            document.getElementById('clientForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const cpfCnpj = document.getElementById('cpf-cnpj').value;
+                const nameBusiness = document.getElementById('name-business').value;
+                const domain = document.getElementById('domain').value;
+                const voucherCode = document.getElementById('code').value.trim();
+                const location = document.getElementById('location').value;
+
+                try {
+                    let saldoVoucher = null;
+
+                    // Se o voucherCode for preenchido, busca na coleção Vouchers
+                    if (voucherCode) {
+                        const querySnapshot = await db.collection('Vouchers')
+                            .where('nameVoucher', '==', voucherCode)
+                            .get();
+
+                        if (!querySnapshot.empty) {
+                            const voucherDoc = querySnapshot.docs[0];
+                            saldoVoucher = voucherDoc.data().saldoVoucher;
+                        } else {
+                            alert('Código de voucher inválido ou não encontrado.');
+                            return; // Interrompe o cadastro se o voucher não for válido
+                        }
+                    }
+
+                    // Adiciona o cliente na coleção Clientes
+                    await db.collection('Clientes').add({
+                        name: name,
+                        email: email,
+                        cpfCnpj: cpfCnpj,
+                        nameBusiness: nameBusiness,
+                        domain: domain,
+                        voucherCode: voucherCode || 'nenhum',
+                        saldo: saldoVoucher || 0,
+                        location: location,
+                        infos: {
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            activeProfile: true,
+                            activeWebSite: false,
+                        }
+                    });
+
+                    alert('Cliente cadastrado com sucesso!');
+                    document.getElementById('clientForm').reset();
+                } catch (error) {
+                    console.error('Erro ao cadastrar cliente:', error);
+                    alert('Ocorreu um erro ao cadastrar o cliente. Tente novamente.');
+                }
+            });
+    </script>
+</body>
+</html>
